@@ -1,99 +1,143 @@
-var bg,bgImg;
-var player, shooterImg, shooter_shooting;
+const Engine = Matter.Engine;
+const Render = Matter.Render;
+const World = Matter.World;
+const Bodies = Matter.Bodies;
+const Constraint = Matter.Constraint;
+const Body = Matter.Body;
+const Composites = Matter.Composites;
+const Composite = Matter.Composite;
 
-var score = 0;
-var life = 3;
-var bullets = 70;
+var base1;
+var base2;
 
+var bridge
+var bridge_con;
+var stones =[];
+var zombie1;
+var zombie2;
+
+var zombie;
+var zombieRight;
+var zombieLeft;
+var btn;
+
+var sad;
+var ground;
 
 function preload(){
+
+  zombieRight = loadAnimation("zombie 1 right.png","zombie2right.png");
+  zombieLeft = loadAnimation("zombie1left.png","zombie2left.png");
   
-  shooterImg = loadImage("assets/shooter_2.png")
-  shooter_shooting = loadImage("assets/shooter_3.png")
-
-  bgImg = loadImage("assets/bg.jpeg")
-
+  bkImg = loadImage("background.png");
+sad = loadAnimation("zombie.png")
 }
 
 function setup() {
+  createCanvas(windowWidth, windowHeight);
+  engine = Engine.create();
+  world = engine.world;
 
+  base1  = new Base(width -1890 ,height/3,300,30);
+  base2  = new Base(width - 100,height/3,500,30);
+
+  ground=new Ground(width/2,height/1,1500,20)
+
+  stone = new Stone(width/2 , height/9,20);      
+
+  bridge = new Bridge(3,{x: base1 .x,y: base1.y}); 
+
+  Matter.Composite.add(bridge.body,base2.body);
+
+  bridge_con = new Link(bridge,base2);
+
+  stone = new Stone(x,y,80); 
   
-  createCanvas(windowWidth,windowHeight);
 
-  //adding the background image
-  bg = createSprite(displayWidth/2-20,displayHeight/2-40,20,20)
-bg.addImage(bgImg)
-bg.scale = 1.1
-  
+  btn= createImg("axe.png");
+  btn.position(width-80,height/2.5 -30);
+  btn.size(70,70);
+  btn.mouseClicked(cut)
 
-//creating the player sprite
-player = createSprite(displayWidth-1150, displayHeight-300, 50, 50);
- player.addImage(shooterImg)
-   player.scale = 0.3
-   player.debug = true
-   player.setCollider("rectangle",0,0,300,300)
+zombie=createSprite(width/2,height-110);
+zombie.addAnimation("right",zombieRight);
+zombie.addAnimation("left",zombieLeft);
+zombie.addAnimation("sad",sad)
+zombie.scale = 0.1;
+zombie.velocityX = 10;
 
+
+
+//console.log(zombie.position.x);
+
+for(var i=0;i<= 8;i++){
+  var x =  random(width / 2 -200, width / 2 +300);
+  var y = random(-10,140);
+   stone = new Stone(x,y,80,80)
+   stones.push(stone);
+}
+
+
+
+
+
+  frameRate(650);
 
 }
 
 function draw() {
-  background(0); 
+  background(bkImg);
+
+  Engine.update(engine);
+  
+  turning();
+  bridge.show();
+ground.display();
 
 
-
-
-  //moving the player up and down and making the game mobile compatible using touches
-if(keyDown("UP_ARROW")||touches.length>0){
-  player.y = player.y-30
-}
-if(keyDown("DOWN_ARROW")||touches.length>0){
- player.y = player.y+30
-}
-
-
-//release bullets and change the image of shooter to shooting position when space is pressed
-if(keyWentDown("space")){
- 
-  player.addImage(shooter_shooting)
- 
-}
-
-//player goes back to original standing image once we stop pressing the space bar
-else if(keyWentUp("space")){
-  player.addImage(shooterImg)
-}
-
-drawSprites();
-
-
-//displaying the score and remaining lives and bullets
-textSize(20)
-  fill("white")
-text("Bullets = " + bullets,displayWidth-210,displayHeight/2-250)
-text("Score = " + score,displayWidth-200,displayHeight/2-220)
-text("Lives = " + life,displayWidth-200,displayHeight/2-280)
-
-
-}
-
-
-
-
-//creating function to spawn zombies
-function enemy(){
-  if(frameCount%50===0){
-
-    //giving random x and y positions for zombie to appear
-    zombie = createSprite(random(500,1100),random(100,500),40,40)
-
-    zombie.addImage(zombieImg)
-    zombie.scale = 0.15
-    zombie.velocityX = -3
-    zombie.debug= true
-    zombie.setCollider("rectangle",0,0,400,400)
-   
-    zombie.lifetime = 400
-   zombieGroup.add(zombie)
+ // stone.create()
+ for( var stone of stones){
+  stone.display();
+  var  pos =stone.stone.position;
+  var distance = dist(zombie.position.x,zombie.position.y,pos.x,pos.y);
+  
+  
+  if(distance<=50){
+    zombie.velocityX =0;
+    Matter.Body.setVelocity(stone.stone,{x: 10 , y: -10});
+    zombie.changeAnimation("sad");
+    collided = true;
+  }
   }
 
+
+
+drawSprites();
+ 
+
 }
+
+function cut()
+{
+  bridge.break();
+  bridge_con.detach();
+  bridge_con = null; 
+  
+}
+
+function turning(){
+
+  if(zombie.x >= 1300){
+    zombie.changeAnimation("left");
+    zombie.velocityX = -10;
+  }
+  else if(zombie.x <= 250){
+    zombie.changeAnimation("right");
+    zombie.velocityX =10;
+  
+}
+
+}
+
+ 
+
